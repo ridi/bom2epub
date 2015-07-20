@@ -1,0 +1,23 @@
+{
+    "name": "namenu/bom2epub",
+    "description": "RIDI Bom to EPub Converter",
+    "authors": [
+        {
+            "name": "blu",
+            "email": "blu@ridi.com"
+        },
+        {
+            "name": "namenu",
+            "email": "hw.nam@ridi.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ridibooks\\Library\\": "src"
+        }
+    }
+}
