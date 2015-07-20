@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">  
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">  
+    <dc:date opf:event="publication">{{PUB_DATE}}</dc:date>  
+    <dc:language>ko</dc:language>  
+    <meta name="cover" content="__epub_main_cover.jpg"/>  
+    <dc:title>{{TITLE}}</dc:title>  
+    <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:RFC3066">ko</dc:language>  
+    <dc:contributor/>  
+    <dc:creator>{{AUTHOR}}</dc:creator>  
+    <dc:description/>  
+    <dc:publisher>{{PUB}}</dc:publisher>  
+    <dc:subject/>  
+    <dc:identifier id="bookid">urn:{{IDENTIFIER}}</dc:identifier>
+  </metadata>  
+  <manifest> 
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>  
+    <item id="__epub_main_cover.jpg" href="Images/__epub_main_cover.jpg" media-type="image/jpeg"/>  
+    <item id="style.css" href="Styles/style.css" media-type="text/css"/>  
+    <item id="COVERPAGE.html" href="Text/COVERPAGE.html" media-type="application/xhtml+xml"/>  
+    {{IMG}}
+    {{MANIFEST}}
+  </manifest>  
+  <spine toc="ncx"> 
+    <itemref idref="COVERPAGE.html"/>  
+    {{SPINE}}
+  </spine>  
+  <guide> 
+    <reference type="cover" title="Cover" href="Text/COVERPAGE.html"/> 
+  </guide> 
+</package>

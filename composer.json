@@ -1,6 +1,7 @@
 {
     "name": "ridibooks/bom2epub",
     "description": "RIDI Bom to EPub Converter",
+    "license": "MIT",
     "authors": [
         {
             "name": "blu",

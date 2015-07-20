@@ -261,7 +261,7 @@ class Bom2EPubConverter
 
 	private function getTemplateDir()
 	{
-		return realpath(__DIR__ . '/../../../tools/controls/epubbuilder.prototype');
+		return realpath(__DIR__ . '/../../template');
 	}
 
 	private function pack()
