@@ -4,6 +4,7 @@
     <dc:date opf:event="publication">{{PUB_DATE}}</dc:date>  
     <dc:language>ko</dc:language>  
     <meta name="cover" content="__epub_main_cover.jpg"/>  
+    <meta content="bom2epub" name="generator" />
     <dc:title>{{TITLE}}</dc:title>  
     <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:RFC3066">ko</dc:language>  
     <dc:contributor/>  
