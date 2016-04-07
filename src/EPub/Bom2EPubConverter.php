@@ -206,7 +206,7 @@ class Bom2EPubConverter
 			$convert_metatitle_callback = function ($mat) use (&$title2body_map, $body_num) {
 				$title_num = $mat[1];
 				$title2body_map[$title_num] = $body_num;
-				return '<pre id="__ridi__navpoint__' . $title_num . '" ></pre>';
+				return '<pre id="__ridi__navpoint__' . $title_num . '" style="display: inline;" ></pre>';
 			};
 			$bodys[$body_num] = preg_replace_callback($convert_metatitle_regex, $convert_metatitle_callback, $body);
 		}
