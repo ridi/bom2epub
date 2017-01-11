@@ -9,8 +9,13 @@ class Bom2EPubConverter
 
 	private $input_dir;
 	private $output_dir;
+	/**
+	 * key with [title, pub_date, author, publisher_name, isbn10, isbn13]
+	 * @var array
+	 */
+	private $book_config;
 
-	public function __construct($b_id, $input_dir, $output_dir)
+	public function __construct($b_id, $input_dir, $output_dir, $book_config = [])
 	{
 		ini_set('pcre.backtrack_limit', PHP_INT_MAX);
 		ini_set('pcre.recursion_limit', PHP_INT_MAX);
@@ -19,6 +24,7 @@ class Bom2EPubConverter
 
 		$this->input_dir = $input_dir;
 		$this->output_dir = $output_dir;
+		$this->book_config = $book_config;
 	}
 
 	public function getEPubPath()
@@ -32,6 +38,7 @@ class Bom2EPubConverter
 		if (is_file($coverSrc)) {
 			return basename($coverSrc);
 		}
+
 		return null;
 	}
 
@@ -81,19 +88,23 @@ class Bom2EPubConverter
 		);
 		@unlink("epub/OEBPS/Images/" . $b_id . '_org.jpg');
 
-		return array($imgs, $IMGTAGS);
+		return [$imgs, $IMGTAGS];
 	}
 
 	private function getMetadata()
 	{
 		//TODO get from DB
-		$bookDataFromDB = array();
+		$bookDataFromDB = $this->book_config;
 
-		$meta = array();
-		$meta['TITLE'] = $bookDataFromDB['title'];
+		$meta = [];
+		$title = $bookDataFromDB['title'];
+		if (strlen($title) <= 0) {
+			$title = 'unknown title';
+		}
+		$meta['TITLE'] = $title;
 		$meta['PUB_DATE'] = preg_replace('/(\d{4})(\d{2})(\d{2})/', '\1-\2-\3', $bookDataFromDB['pub_date']);
 		$meta['PUB_DATE'] = date('Y-m-d', strtotime($meta['PUB_DATE']));
-		$meta['AUTHOR'] = $bookDataFromDB['author'] . $bookDataFromDB['author2'];
+		$meta['AUTHOR'] = $bookDataFromDB['author'];
 		$meta['PUB'] = $bookDataFromDB['publisher_name'];
 		$meta['IDENTIFIER'] = 'ridi:' . $this->b_id;
 		$isbn10 = preg_replace('/\W/', '', $bookDataFromDB['isbn10']);
@@ -129,8 +140,8 @@ class Bom2EPubConverter
 		$bodys = array_values($bodys);
 
 		$navpointKey = '__ridi__navpoint__ASDHAOSHDSUAFAISOFHIUAS__';
-		$titles = array();
-		$title2body_map = array(); //title_num => body_num
+		$titles = [];
+		$title2body_map = []; //title_num => body_num
 
 		//make meta title
 		$_this = $this;
@@ -179,7 +190,7 @@ class Bom2EPubConverter
 		//process body
 		list($imgs, $IMGTAGS) = $this->getImageList();
 
-		$newbodies = array();
+		$newbodies = [];
 		$newIndex = 0;
 		foreach ($bodys as $body) {
 			$body = $this->formatting_contents($body, $imgs);
@@ -206,6 +217,7 @@ class Bom2EPubConverter
 			$convert_metatitle_callback = function ($mat) use (&$title2body_map, $body_num) {
 				$title_num = $mat[1];
 				$title2body_map[$title_num] = $body_num;
+
 				return '<pre id="__ridi__navpoint__' . $title_num . '" style="display: inline;" ></pre>';
 			};
 			$bodys[$body_num] = preg_replace_callback($convert_metatitle_regex, $convert_metatitle_callback, $body);
@@ -307,6 +319,7 @@ class Bom2EPubConverter
 
 	/**
 	 * @param $title
+	 *
 	 * @return string
 	 */
 	public function removeBomTagsForIndex($title)
@@ -317,22 +330,24 @@ class Bom2EPubConverter
 			$title = preg_replace('/\{SUB\}.+\{\/SUB\}/Uis', '', $title);
 		}
 		$title = preg_replace('/\{[^\{\}]+\}/Us', '', $title);
+
 		return strval($title);
 	}
 
 	private function recoverHtmlTags($bodySplit)
 	{
 		global $recoverBomTagsStack;
-		$recoverBomTagsStack = array();
+		$recoverBomTagsStack = [];
 		$ret = preg_replace_callback(
 			'/\<(\/?)([\w]+)([^\<\>]*)\>/',
-			array($this, 'recoverHtmlTags_callback'),
+			[$this, 'recoverHtmlTags_callback'],
 			$bodySplit
 		);
 
 		while ($lastTag = array_pop($recoverBomTagsStack)) {
 			$ret .= '</' . $lastTag . '>';
 		}
+
 		return $ret;
 	}
 
@@ -375,22 +390,25 @@ class Bom2EPubConverter
 						}
 					}
 				}
+
 				return $ret . $mat[0];
 			}
 		}
+
 		return $mat[0];
 	}
 
 	private function basename_utf8($file)
 	{
 		preg_match('/\/?([^\/]+)$/', $file, $mat);
+
 		return $mat[1];
 	}
 
 	private function formatting_contents($body, $imgs)
 	{
 		global $__existimages;
-		$__existimages = array();
+		$__existimages = [];
 		foreach ($imgs as $img) {
 			$__existimages[$this->basename_utf8($img)] = true;
 		}
@@ -402,13 +420,13 @@ class Bom2EPubConverter
 		$content = str_ireplace('{FONT/}', '{/FONT}', $content);
 		$content = str_ireplace('{/TITLE}', '{/FONT}', $content);
 
-		$content = preg_replace_callback("/\n +/", array($this, 'str_textindent'), $content);
+		$content = preg_replace_callback("/\n +/", [$this, 'str_textindent'], $content);
 		$content = preg_replace_callback(
 			"/(\{(\w+)(?:\W*|\W[^\}]+)\}).+(?:\{\/\\2[^\}]*\})/iUs",
-			array($this, 'newliner'),
+			[$this, 'newliner'],
 			$content
 		);
-		$content = preg_replace_callback("/\{(\/?)([^\}]*)\}/", array($this, 'tags_callback'), $content);
+		$content = preg_replace_callback("/\{(\/?)([^\}]*)\}/", [$this, 'tags_callback'], $content);
 
 		$content = preg_replace('/<page\/>(<page\/>|\s)*/i', '<page/>', $content);
 
@@ -425,17 +443,19 @@ class Bom2EPubConverter
 
 	public function newliner($args)
 	{
-		if (in_array(strtolower($args[2]), array('font', 'sub', 'sup'))) {
+		if (in_array(strtolower($args[2]), ['font', 'sub', 'sup'])) {
 			$ret = str_replace("\r", "", $args[0]);
 			$ret = str_replace("\n", "{/" . $args[2] . "}\n" . $args[1], $ret);
+
 			return $ret;
 		}
+
 		return $args[0];
 	}
 
 	private function convertHtmlattrToDict($str)
 	{
-		$dict = array();
+		$dict = [];
 		$key = '';
 		$writable = false;
 		preg_match_all('/(\w+)|(=)|"([^"]*)"|\'([^\']*)\'|\s+/s', $str, $tokens, PREG_SET_ORDER);
@@ -458,6 +478,7 @@ class Bom2EPubConverter
 				}
 			}
 		}
+
 		return $dict;
 	}
 
@@ -469,6 +490,7 @@ class Bom2EPubConverter
 			$ret .= '=';
 			$ret .= '"' . addslashes($v) . '" ';
 		}
+
 		return $ret;
 	}
 
@@ -478,9 +500,9 @@ class Bom2EPubConverter
 
 		$tagBody = $args[2];
 		$dict = $this->convertHtmlattrToDict($tagBody);
-		$newAttr = array();
-		$prefixes = array();
-		$postfixes = array();
+		$newAttr = [];
+		$prefixes = [];
+		$postfixes = [];
 
 		$newAttr['src'] = '../Images/' . $dict['src'];
 		if ($dict['fullscreen']) {
@@ -496,11 +518,11 @@ class Bom2EPubConverter
 
 		if ($__existimages[$this->basename_utf8($dict['src'])]) {
 			return implode('', $prefixes) . '<' . $args[1] . 'img' . $this->convertDictToHtmlattr(
-				$newAttr
-			) . '/>' . implode(
-				'',
-				array_reverse($postfixes)
-			);
+					$newAttr
+				) . '/>' . implode(
+					'',
+					array_reverse($postfixes)
+				);
 		} else {
 			return '';
 		}
@@ -510,7 +532,7 @@ class Bom2EPubConverter
 	{
 		$tagBody = $args[2];
 		$dict = $this->convertHtmlattrToDict($tagBody);
-		$newAttr = array();
+		$newAttr = [];
 
 		if ($dict['size']) {
 			switch ($dict['size']) {
@@ -542,7 +564,7 @@ class Bom2EPubConverter
 			}
 		}
 		if ($dict['align']) {
-			if (in_array($dict['align'], array('left', 'center', 'right'))) {
+			if (in_array($dict['align'], ['left', 'center', 'right'])) {
 				$newAttr['style'] .= 'text-align:' . $dict['align'] . ';display:block;';
 			}
 		}
@@ -551,6 +573,7 @@ class Bom2EPubConverter
 				$newAttr['style'] .= 'color:' . $dict['color'] . ';';
 			}
 		}
+
 		return '<' . $args[1] . 'span' . $this->convertDictToHtmlattr($newAttr) . '>';
 	}
 
@@ -558,7 +581,7 @@ class Bom2EPubConverter
 	{
 		$tagBody = $args[2];
 		$dict = $this->convertHtmlattrToDict($tagBody);
-		$newAttr = array();
+		$newAttr = [];
 		$prefix = '';
 
 		if ($args[1] == '/') {
@@ -568,6 +591,7 @@ class Bom2EPubConverter
 			if ($dict['page'] != 'no') {
 				$prefix .= '<page/>';
 			}
+
 			return $prefix . '<' . $args[1] . 'span' . $this->convertDictToHtmlattr($newAttr) . '>';
 		}
 	}
@@ -593,6 +617,7 @@ class Bom2EPubConverter
 		if (preg_match('/^(title)/i', $args[2])) {
 			return $this->titletag_callback($args);
 		}
+
 		return '{' . $args[1] . htmlspecialchars($args[2]) . '}';
 	}
 
@@ -601,6 +626,7 @@ class Bom2EPubConverter
 		foreach ($arrs as $k => $arr) {
 			$str = str_replace("{{" . $k . "}}", htmlspecialchars($arr), $str);
 		}
+
 		return $str;
 	}
 }
