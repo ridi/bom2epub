@@ -45,6 +45,7 @@ class Bom2EPubConverter
 	private function copyImages()
 	{
 		exec("cp -rv {$this->input_dir}/*.jpg epub/OEBPS/Images/ 2>&1");
+		exec("cp -rv {$this->input_dir}/*.jpeg epub/OEBPS/Images/ 2>&1");
 		exec("cp -v {$this->input_dir}/*.png epub/OEBPS/Images/ 2>&1");
 		exec("cp -v {$this->input_dir}/*.gif epub/OEBPS/Images/ 2>&1");
 	}
@@ -55,6 +56,7 @@ class Bom2EPubConverter
 
 		$imgs = array_merge(
 			glob("epub/OEBPS/Images/*.jpg"),
+			glob("epub/OEBPS/Images/*.jpeg"),
 			glob("epub/OEBPS/Images/*.png"),
 			glob("epub/OEBPS/Images/*.gif")
 		);
@@ -67,7 +69,7 @@ class Bom2EPubConverter
 			}
 			$img = $this->basename_utf8($img);
 			$img_id = 'id.' . preg_replace('/\W/i', '', base64_encode($img));
-			if (preg_match('/\.jpg$/i', $img)) {
+			if (preg_match('/\.jpg$/i', $img) || preg_match('/\.jpeg$/i', $img)) {
 				$type = 'image/jpeg';
 			} elseif (preg_match('/\.png$/i', $img)) {
 				$type = 'image/png';
